@@ -46,7 +46,7 @@ EOF
 
 # stupid hack to get help2man to work
 # don't mind me
-for arg in $*; do
+for arg in "$@"; do
     if [ "$arg" = "--help" ]; then
         usage
         exit 0
