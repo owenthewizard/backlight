@@ -1,0 +1,51 @@
+.TH BACKLIGHT "1" "June 2022" "backlight 1.0.0" "User Commands"
+.SH NAME
+backlight \- manual page for backlight 1.0.0
+.SH DESCRIPTION
+usage: backlight [\-hsV] [\-d device] \fB\-\-\fR [+|\-]<num>[%]
+.TP
+Adjust backlight absolutely or relatively.
+.TP
+\fB\-h\fR
+output this help text and exit
+.TP
+\fB\-s\fR
+smoothly increase or decrease to <num>
+.IP
+default is to adjust immediately
+.TP
+\fB\-V\fR
+output version and license information and exit
+.HP
+\fB\-d\fR device
+.IP
+operate on [device]
+.IP
+default is the first device in \fI\,/sys/class/backlight\/\fP
+.TP
++|\-
+relative increase or decrease
+.IP
+default is absolute
+.TP
+<num>
+desired backlight value
+.TP
+%
+interpret <num> as percent
+.IP
+default is absolute
+.SH COPYRIGHT
+Copyright \(co 2022 Owen Walpole
+.PP
+Permission to use, copy, modify, and/or distribute this software for any
+purpose with or without fee is hereby granted, provided that the above
+copyright notice and this permission notice appear in all copies.
+.PP
+THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES WITH
+REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY
+AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT,
+INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM
+LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR
+OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
+PERFORMANCE OF THIS SOFTWARE.

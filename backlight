@@ -1,0 +1,169 @@
+#!/bin/sh
+
+# a little bit of safety
+set -eu
+
+VERSION="1.0.0"
+
+usage() {
+    cat <<EOF
+usage: $0 [-hsV] [-d device] -- [+|-]<num>[%]
+Adjust backlight absolutely or relatively.
+
+  -h        output this help text and exit
+  -s        smoothly increase or decrease to <num>
+            default is to adjust immediately
+  -V        output version and license information and exit
+  -d device operate on [device]
+            default is the first device in /sys/class/backlight
+  +|-       relative increase or decrease
+            default is absolute
+  <num>     desired backlight value
+  %         interpret <num> as percent
+            default is absolute
+EOF
+}
+
+version() {
+    cat <<EOF
+$0 $VERSION
+
+Copyright (c) 2022 Owen Walpole
+
+Permission to use, copy, modify, and/or distribute this software for any
+purpose with or without fee is hereby granted, provided that the above
+copyright notice and this permission notice appear in all copies.
+
+THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES WITH
+REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY
+AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT,
+INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM
+LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR
+OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
+PERFORMANCE OF THIS SOFTWARE.
+EOF
+}
+
+# stupid hack to get help2man to work
+# don't mind me
+for arg in $*; do
+    if [ "$arg" = "--help" ]; then
+        usage
+        exit 0
+    elif [ "$arg" = "--version" ]; then
+        version
+        exit 0
+    fi
+done
+
+# get the first backlight device
+first_node() {
+    set -- /sys/class/backlight/*
+    printf "%s" "${1#/sys/class/backlight/}"
+}
+
+# get $1 % of $2
+# e.g. rel2abs 50 255 = 127
+# rounding error is acceptable
+# however feel free to submit a PR
+rel2abs() {
+    printf "%d" $(($1 * $2 / 100))
+}
+
+while getopts "hsVd:" "args"; do
+    case "$args" in
+        h) usage; exit 0 ;;
+        V) version; exit 0 ;;
+        s) smooth=1 ;;
+        d) device="$OPTARG" ;;
+        *) usage >&2; exit 1;;
+    esac
+done
+shift $((OPTIND - 1))
+if [ "$#" -ne 1 ]; then
+    usage >&2
+    exit 1
+fi
+
+num=""
+# read $1 byte-by-byte
+# for our purposes, character by character
+# we don't care about multi-byte codepoints anyways
+# we only care about [0-9], +, -, and %
+OPTIND=1
+while getopts ":" _dummy "-$1"; do
+    # digit - append to $num
+    case "${OPTARG:=:}" in
+        [[:digit:]]) num="$num${OPTARG:=:}"
+        continue
+        ;;
+    esac
+    # pos. adj.
+    if [ "${OPTARG:=:}" = "+" ]; then
+        direction="+"
+    # neg. adj
+    elif [ "${OPTARG:=:}" = "-" ]; then
+        direction="-"
+    # % adj.
+    elif [ "${OPTARG:=:}" = "%" ]; then
+        percent=1
+    # invalid input
+    else
+        printf '%s\n' "$0: error: malformed <num>" >&2
+        exit 2
+    fi
+done
+
+# percent may be unbound
+set +u
+if [ $percent ] && [ "$num" -gt 100 ]; then
+    printf '%s\n' "$0: error: percent must be <= 100" >&2
+    exit 2
+fi
+set -u
+
+node="/sys/class/backlight/${device:-$(first_node)}"
+if ! [ -d "$node" ]; then
+    printf '%s\n' "$0: error: backlight not found"
+    exit 3
+fi
+
+# I don't think this can be a redirect instead of cat
+# unless we use some evil eval nonsense
+max=$(cat "$node/max_brightness")
+# previously I defined $cur here, but might as well be lazy
+# it might not ever need to be called
+
+# percent may be unbound
+set +u
+[ $percent ] && num=$(rel2abs $num "$max")
+set -u
+
+# if $direction is set, use it as the operator
+# direction may be unbound
+set +u
+if [ -n "$direction" ]; then
+    cur=$(cat "$node/brightness")
+    # _shellcheck doesn't understand what we're doing here
+    # that's probably a bad sign...
+    # shellcheck disable=SC1102
+    num=$((cur $direction num))
+fi
+set -u
+
+# MAX(num, max)
+[ "$num" -gt "$max" ] && num=$max
+
+if [ $smooth ]; then
+    cur=$(cat "$node/brightness")
+    while [ "$cur" -lt "$num" ]; do
+        cur=$((cur + 1))
+        printf '%s' "$cur" > "$node/brightness"
+    done
+    while [ "$cur" -gt "$num" ]; do
+        cur=$((cur - 1))
+        printf '%s' "$cur" > "$node/brightness"
+    done
+else
+    printf '%s' "$num" > "$node/brightness"
+fi
