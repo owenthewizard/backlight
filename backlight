@@ -169,7 +169,6 @@ if [ "$smooth" ]; then
         printf '%s' "$cur" > "$node/brightness"
     done
 else
-    echo printf '%s' "$num"
     printf '%s' "$num" > "$node/brightness"
 fi
 set -u
