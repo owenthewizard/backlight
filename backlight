@@ -152,7 +152,9 @@ fi
 set -u
 
 # MAX(num, max)
-[ "$num" -gt "$max" ] && num=$max
+[ "$num" -gt "$max" ] && num="$max"
+# MIN(num, 0)
+[ "$num" -lt 0 ] && num=0
 
 # smooth may be unbound
 set +u
@@ -167,6 +169,7 @@ if [ "$smooth" ]; then
         printf '%s' "$cur" > "$node/brightness"
     done
 else
+    echo printf '%s' "$num"
     printf '%s' "$num" > "$node/brightness"
 fi
 set -u
