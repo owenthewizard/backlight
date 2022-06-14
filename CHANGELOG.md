@@ -11,6 +11,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Tests
 
+## [1.0.1] - 2022-06-14
+
+### Added
+
+- Clamp minimum brightness to zero
+
+### Fixed
+
+- Allow `$smooth` to be undefined
+
 ## [1.0.0] - 2022-06-11
 
 ### Added
