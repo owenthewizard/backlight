@@ -154,7 +154,9 @@ set -u
 # MAX(num, max)
 [ "$num" -gt "$max" ] && num=$max
 
-if [ $smooth ]; then
+# smooth may be unbound
+set +u
+if [ "$smooth" ]; then
     cur=$(cat "$node/brightness")
     while [ "$cur" -lt "$num" ]; do
         cur=$((cur + 1))
@@ -167,3 +169,4 @@ if [ $smooth ]; then
 else
     printf '%s' "$num" > "$node/brightness"
 fi
+set -u
